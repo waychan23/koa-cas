@@ -5,9 +5,9 @@
 const session = require('koa-generic-session');
 const convert = require('koa-convert');
 const bodyParser = require('koa-bodyparser');
-const cookie = require('koa-cookie');
+//const cookie = require('koa-cookie');
 const Router = require('koa-router');
-const json = require('koa-json');
+//const json = require('koa-json');
 const uuid = require('uuid');
 const utils = require('../../lib/utils');
 const url = require('url');
@@ -146,37 +146,37 @@ module.exports = (app, options) => {
   options.expectStatus = options.expectStatus || 200;
 
   app.keys = [ 'cas', 'test' ];
-  app.use(convert.back(cookie.default('here is some secret')));
+//  app.use(convert.back(cookie.default('here is some secret')));
   app.use(session({
     key: 'SESSIONID', // default "koa:sess"
-    store: session.MemoryStore(),
+    store: new (session.MemoryStore)(),
   }));
   app.use(bodyParser());
-  app.use(convert.back(json()));
+//  app.use(convert.back(json()));
 
   const router = new Router();
-  router.get('/cas/serviceValidate', function* () {
+  router.get('/cas/serviceValidate', async function (ctx, next) {
     if (options.expectStatus !== 200) {
-      this.status = options.expectStatus;
+      ctx.status = options.expectStatus;
       return;
     }
     if (options.expectStatusStr === 'fail') {
-      this.status = 200;
-      this.body = getFailResponse('xxx');
+      ctx.status = 200;
+      ctx.body = getFailResponse('xxx');
       return;
     }
     if (options.expectStatusStr === 'invalid') {
-      this.status = 200;
-      this.body = 'i am a invalid xml';
+      ctx.status = 200;
+      ctx.body = 'i am a invalid xml';
       return;
     }
-    if (this.query) {
-      if (!this.query.ticket || !this.query.service) {
-        this.body = getFailResponse('xxx');
+    if (ctx.query) {
+      if (!ctx.query.ticket || !ctx.query.service) {
+        ctx.body = getFailResponse('xxx');
         return;
       }
-      const ticket = this.query.ticket;
-      const service = this.query.service;
+      const ticket = ctx.query.ticket;
+      const service = ctx.query.service;
       let finded = false;
       let tgtId;
       let tgt; // eslint-disable-line
@@ -196,75 +196,75 @@ module.exports = (app, options) => {
 
       if (!finded) {
         console.log('2');
-        this.body = getFailResponse(ticket);
+        ctx.body = getFailResponse(ticket);
         return;
       }
 
       const pgtIou = uuid.v4();
 
-      if (this.query.pgtUrl) {
-        const proxyCallbackUrl = `${this.query.pgtUrl}?${qs.stringify({ pgtId: tgtId, pgtIou })}`;
+      if (ctx.query.pgtUrl) {
+        const proxyCallbackUrl = `${ctx.query.pgtUrl}?${qs.stringify({ pgtId: tgtId, pgtIou })}`;
         console.log('cas server: sending request to proxyCallback, url=', proxyCallbackUrl);
         try {
-          yield utils.getRequest(proxyCallbackUrl);
-          this.body = getSuccessResponse(pgtIou);
+          await utils.getRequest(proxyCallbackUrl);
+          ctx.body = getSuccessResponse(pgtIou);
           return;
         } catch (err) {
           console.error('Error when sending request to pgtUrl', err);
         }
       } else {
-        this.body = getSuccessResponse();
+        ctx.body = getSuccessResponse();
         return;
       }
     }
   });
 
-  router.get('/cas/proxy', function* () {
-    if (!this.query) {
-      this.body = getFailProxyResponse('emptyRequest');
+  router.get('/cas/proxy', async function (ctx, next) {
+    if (!ctx.query) {
+      ctx.body = getFailProxyResponse('emptyRequest');
       return;
     }
-    if (!this.query.pgt) {
-      this.body = getFailProxyResponse('emptyPgt');
-    } else if (!this.query.targetService) {
-      this.body = getFailProxyResponse('emptyTargetService');
-    } else if (this.query.targetService === 'invalid') {
-      this.body = getFailProxyResponse('emptyTargetService');
-    } else if (this.query.pgt in tgts || this.query.pgt === 'fakePgtId') {
+    if (!ctx.query.pgt) {
+      ctx.body = getFailProxyResponse('emptyPgt');
+    } else if (!ctx.query.targetService) {
+      ctx.body = getFailProxyResponse('emptyTargetService');
+    } else if (ctx.query.targetService === 'invalid') {
+      ctx.body = getFailProxyResponse('emptyTargetService');
+    } else if (ctx.query.pgt in tgts || ctx.query.pgt === 'fakePgtId') {
       const pt = uuid.v4();
-      this.body = getSuccessProxyResponse(pt);
+      ctx.body = getSuccessProxyResponse(pt);
     } else {
-      this.body = getFailProxyResponse('invalidPgt', this.query.pgt);
+      ctx.body = getFailProxyResponse('invalidPgt', ctx.query.pgt);
     }
   });
 
-  router.get('/cas/login', function* () {
+  router.get('/cas/login', async function (ctx, next) {
     console.log('GET /cas/login');
-    if (this.query && this.query.service) {
+    if (ctx.query && ctx.query.service) {
       const pgtId = uuid.v4();
       tgts[pgtId] = initTgt();
       const st = 'ST-'+uuid.v4();
-      tgts[pgtId].st[st] = initTicket(this.query.service);
-      const path = decodeURIComponent(this.query.service);
+      tgts[pgtId].st[st] = initTicket(ctx.query.service);
+      const path = decodeURIComponent(ctx.query.service);
       const uri = url.parse(path, true);
       if (!uri.query) uri.query = {};
       uri.query.ticket = st;
-      this.redirect(url.format(uri));
+      ctx.redirect(url.format(uri));
     } else {
-      this.body = 'ok';
+      ctx.body = 'ok';
     }
   });
 
-  router.get('/cas/logout', function* () {
-    this.body = 'ok';
+  router.get('/cas/logout', async function (ctx, next) {
+    ctx.body = 'ok';
   });
 
-  router.post('/cas/v1/tickets', function* () {
+  router.post('/cas/v1/tickets', async function (ctx, next) {
 
     const username = 'username';
     const password = 'password';
     const type = '8';
-    const body = this.request.body;
+    const body = ctx.request.body;
     console.log('/cas/v1/tickets body: ', body);
     if (body &&
       body.username === username &&
@@ -272,21 +272,21 @@ module.exports = (app, options) => {
       body.password === password) {
       const pgtId = uuid.v4();
       tgts[pgtId] = initTgt();
-      this.body = getRestletIntegrationPGT(pgtId);
+      ctx.body = getRestletIntegrationPGT(pgtId);
     } else {
-      this.status = 400;
+      ctx.status = 400;
     }
   });
 
-  router.delete('/cas/v1/tickets/:tgt', function* () {
-    if (this.params && this.params.tgt && (this.params.tgt in tgts)) {
-      delete tgts[this.params.tgt];
+  router.delete('/cas/v1/tickets/:tgt', async function (ctx, next) {
+    if (ctx.params && ctx.params.tgt && (ctx.params.tgt in tgts)) {
+      delete tgts[ctx.params.tgt];
     }
-    this.status = 200;
+    ctx.status = 200;
   });
 
-  router.get('/cas/v1/tickets', function* () {
-    this.body = JSON.stringify(tgts);
+  router.get('/cas/v1/tickets', async function (ctx, next) {
+    ctx.body = JSON.stringify(tgts);
   });
   app.use(router.routes()).use(router.allowedMethods());
 

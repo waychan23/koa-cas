@@ -1,9 +1,13 @@
 [![Build Status](https://travis-ci.org/allanfish/koa-cas.svg?branch=master)](https://travis-ci.org/allanfish/koa-cas)
 [![Coverage Status](https://coveralls.io/repos/github/allanfish/koa-cas/badge.svg?branch=master)](https://coveralls.io/github/allanfish/koa-cas?branch=master)
 
-# koa-cas2
+# koa-cas
 
-A complete implement of CAS Client middleware for Express/Connect, support CAS 2.0+ protocol.
+This documentation is modified from the original connect-cas repository, and it has not been completely 'transformed' to fit the koa situation. Contribution to help complete this README.md will be appreciated.
+
+(Note: this repository is forked from [allanfish/koa-cas](https://github.com/allanfish/koa-cas))
+
+A complete implement of CAS Client middleware for Koa2, support CAS 2.0+ protocol.
 
 CAS(Central Authentication Service) is a single-sign-on / single-sign-off protocol for the web.
 
@@ -13,7 +17,7 @@ We suppose you are already familiar with the CAS protocol, if not, please read t
 
 ## Install
 
-    npm install koa-cas2
+    npm install waychan23/koa-cas
 
 ## Feature
 
@@ -26,27 +30,25 @@ We suppose you are already familiar with the CAS protocol, if not, please read t
 
 Notice:
 
-1. You must use `express-session` middleware before the casClient.core() middleware.
+1. You must use `koa-session` middleware before the casClient.core() middleware.
 2. If you want to enable slo(single sign logout) feature, you need to use casClient.core() middleware before `bodyParser`, because the SLO need to access a POST request's raw body from CAS server.
 
 ```javascript
-var express = require('express');
-var ConnectCas = require('koa-cas2');
-var bodyParser = require('body-parser');
-var session = require('express-session');
-var cookieParser = require('cookie-parser');
+var koa = require('koa');
+var KoaCas = require('koa-cas');
+var bodyParser = require('koa-bodyparser');
+var session = require('koa-session');
 var MemoryStore = require('session-memory-store')(session);
 
-var app = express();
+var app = new koa();
 
-app.use(cookieParser());
 app.use(session({
   name: 'NSESSIONID',
   secret: 'Hello I am a long long long secret',
   store: new MemoryStore()  // or other session store
 }));
 
-var casClient = new ConnectCas({
+var casClient = new KoaCas({
   debug: true,
     ignore: [
       /\/ignore/
@@ -80,15 +82,14 @@ var casClient = new ConnectCas({
 app.use(casClient.core());
 
 // NOTICE: If you want to enable single sign logout, you must use casClient middleware before bodyParser.
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded());
 
 app.get('/logout', casClient.logout());
 
 // or do some logic yourself
-app.get('/logout', function(req, res, next) {
+app.get('/logout', async function(ctx, next) {
   // Do whatever you like here, then call the logout middleware
-  casClient.logout()(req, res, next);
+  await casClient.logout()(ctx, next);
 });
 ```
 
@@ -127,18 +128,18 @@ Under the hook, we checked the rules like:
 1. String rules:
 
 ```javascript
-if (req.path.indexOf(stringRule) > -1) next();
+if (ctx.path.indexOf(stringRule) > -1) next();
 ```
 
 2. Reg rules:
 
 ```javascript
-if (regRule.test(req.path)) next();
+if (regRule.test(ctx.path)) next();
 ```
 
 3. Function rules:
 ```javascript
-if (functionRule(req.path, req)) next();
+if (functionRule(ctx.path, ctx)) next();
 ```
 
 So you could config which specific path you need to ignore by the CAS authentication.
@@ -259,13 +260,13 @@ var options = {
 
 var casClient = new CasClient(options)
 
-app.get('/logout', function(req, res) {
-  var fromWhere = req.get('Referer');
+app.get('/logout', async function(ctx, next) {
+  var fromWhere = ctx.request.get('Referer');
   var fromWhereUri = url.parse(fromWhere);
   if (fromWhereUri.pathname.match(/the page you dont want user to login after logout/)) {
-    res.cookie('logoutFrom', fromWhereUri.pathname);
+    ctx.cookies.set('logoutFrom', fromWhereUri.pathname);
   }
-  casClient.logout()(req, res);
+  await casClient.logout()(ctx, next);
 });
 
 ````
@@ -340,23 +341,23 @@ In our cases, we also print the user information in each log for convenient to t
 Here's how we setup our production environment's log:
 
 ```javascript
-app.use((req, res, next) => {
-  req.sn = uuid.v4();
+app.use(async (ctx, next) => {
+  ctx.request.sn = uuid.v4();
   function getLogger(type = 'log', ...args) {
     let user = 'unknown';
     try {
-      user = req.session.cas.user;
+      user = ctx.session.cas.user;
     } catch(e) {}
 
-    return console[type].bind(console[type], `${req.sn}|${user}|${req.ip}|`, ...args);
+    return console[type].bind(console[type], `${ctx.request.sn}|${user}|${ctx.ip}|`, ...args);
   }
 
-  req.getLogger = getLogger;
+  ctx.getLogger = getLogger;
 });
 
 var casClient = new CasClient({
-  logger: (req, type) => {
-    return req.getLogger(type, '[CONNECT_CAS]: ');
+  logger: (ctx, type) => {
+    return ctx.getLogger(type, '[KOA_CAS]: ');
   }
 });
 
@@ -380,9 +381,9 @@ Use it like `app.get('/logout', casClient.logout())`. It will destroy the sessio
 In most cases, you want to do something else before actually logout, so use it like:
 
 ```javascript
-  app.get('/logout', function(req, res) {
+  app.get('/logout', async function(ctx, next) {
     // Do your logic here, then call the logout middle
-    casClient.logout()(req, res)
+    await casClient.logout()(ctx, next)
   });
 
 ```
@@ -404,9 +405,9 @@ For example, if they're using koa-cas2 too, this should be their `${options.serv
 
 Example:
 ```javascript
-   app.get('/api', function(req, res) {
+   app.get('/api', async function(ctx, next) {
      var service = 'http://your-service.com';
-     req.getProxyTicket(service + '/cas', function ptCallback(err, pt) {
+     ctx.getProxyTicket(service + '/cas', function ptCallback(err, pt) {
        if (err) return res.status(401).send('Error when requesting PT, Authentication failed!');
 
        request.get(service + '/api/someapi?ticket=' + 'pt', function (err, response) {

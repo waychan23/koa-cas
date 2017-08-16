@@ -2,10 +2,10 @@ const { expect } = require('chai');
 const hideLog = true;
 
 exports.hooks = {
-  * before(ctx) {
+  async before(ctx) {
     ctx.start = Date.now();
   },
-  * after(ctx) {
+  async after(ctx) {
     console.log(`after hook: costTime=${Date.now() - ctx.start} ms. `);
     expect(ctx.start).to.not.be.empty;
   },
@@ -26,22 +26,22 @@ exports.logger = hideLog ? null : (req, type) => {
 };
 
 exports.sessionStHook = (app) => {
-  app.use(function* (next) {
-    this.session.cas = {
+  app.use(async function (ctx, next) {
+    ctx.session.cas = {
       user: '156260767',
       st: 'st',
     };
-    yield next;
+    await next();
   });
 };
 
 exports.sessionStAndPgtHook = (app) => {
-  app.use(function* (next) {
-    this.session.cas = {
+  app.use(async function (ctx, next) {
+    ctx.session.cas = {
       user: '156260767',
       st: 'st',
       pgt: 'pgt',
     };
-    yield next;
+    await next();
   });
 };

@@ -10,27 +10,28 @@
     "url": "git+https://github.com/allanfish/koa-cas.git"
   },
   "engines": {
-    "node": ">=6.0.0"
+    "node": ">=6.9.0"
   },
   "scripts": {
     "start": "node ./example",
-    "mocha": "mocha ",
+    "mocha": "mocha",
     "test": "istanbul cover -x 'example/**' _mocha -- -R spec"
   },
   "bugs": {
     "url": "https://github.com/allanfish/koa-cas/issues"
   },
-  "maintainers": [{
-    "email": "googleyufei@qq.com",
-    "name": "allanfish"
-  }],
+  "maintainers": [
+    {
+      "email": "googleyufei@qq.com",
+      "name": "allanfish"
+    }
+  ],
   "dependencies": {
-    "co": "^4.6.0",
     "deprecate": "^0.1.0",
-    "is-type-of": "^1.0.0",
-    "lodash": "^4.13.1",
-    "query-string": "^4.1.0",
-    "xml2js": "^0.4.16"
+    "is-type-of": "^1.2.0",
+    "lodash": "^4.14.4",
+    "query-string": "^5.0.0",
+    "xml2js": "^0.4.18"
   },
   "description": "NodeJS implement of CAS(Central Authentication Service) client.",
   "devDependencies": {
@@ -39,22 +40,19 @@
     "babel-runtime": "^6.23.0",
     "chai": "^3.5.0",
     "coveralls": "^2.11.12",
-    "ejs": "^2.4.2",
-    "eslint": "3.6.0",
+    "ejs": "^2.5.7",
+    "eslint": "^3.19.0",
     "eslint-config-bugly-base": "^11.1.9",
     "istanbul": "^0.4.4",
-    "koa": "^1.4.0",
-    "koa-bodyparser": "^2.5.0",
-    "koa-convert": "^1.2.0",
-    "koa-cookie": "^1.0.0",
-    "koa-generic-session": "^1.11.5",
-    "koa-json": "^2.0.2",
-    "koa-router": "5.4.0",
-    "mocha": "^3.2.0",
-    "mocha-lcov-reporter": "^1.2.0",
+    "koa": "^2.3.0",
+    "koa-bodyparser": "^4.2.0",
+    "koa-generic-session": "^2.0.0",
+    "koa-router": "7.2.1",
+    "mocha": "^3.5.0",
+    "mocha-lcov-reporter": "^1.3.0",
     "rewire": "^2.5.2",
     "supertest": "^3.0.0",
-    "uuid": "^2.0.2"
+    "uuid": "^3.1.0"
   },
   "directories": {
     "lib": "./lib"

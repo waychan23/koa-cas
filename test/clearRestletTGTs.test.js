@@ -54,20 +54,20 @@ describe('清理全局tgt工作正常', function() {
       logger,
     }, {
       beforeCasConfigHook(app) {
-        app.use(function* (next) {
+        app.use(async function (ctx, next) {
           if (typeof hookBeforeCasConfig === 'function') {
-            return yield hookBeforeCasConfig(this, next);
+            return await hookBeforeCasConfig(ctx, next);
           } else {
-            return yield next;
+            return await next();
           }
         });
       },
       afterCasConfigHook(app) {
-        app.use(function* (next) {
+        app.use(async function (ctx, next) {
           if (typeof hookAfterCasConfig === 'function') {
-            return yield hookAfterCasConfig(this, next);
+            return await hookAfterCasConfig(ctx, next);
           } else {
-            return yield next;
+            return await next();
           }
         });
       },
@@ -102,7 +102,7 @@ describe('清理全局tgt工作正常', function() {
   it('正常获取tgt, 并且能够正常获取pt后, 调用清理tgt接口, 再用老tgt换pt失败', function(done) {
     let pgt;
 
-    hookAfterCasConfig = function* (ctx, next) {
+    hookAfterCasConfig = async function (ctx, next) {
       console.log('hookAfterCasConfig');
       if (ctx.path === '/restlet') {
         if (ctx.query && ctx.query.time) {
@@ -110,18 +110,18 @@ describe('清理全局tgt工作正常', function() {
           expect(cachedPgt).to.equal(pgt);
         }
         console.log('hookAfterCasConfig start getProxyTicket...');
-        const pt = yield ctx.getProxyTicket('some targetService');
+        const pt = await ctx.getProxyTicket('some targetService');
         console.log('final pt: ', pt);
         pgt = globalPGTStore.get('demo1');
         expect(pgt).to.not.be.empty;
         ctx.body = pt;
         return;
       } else if (ctx.path === '/clearRestlet') {
-        yield ctx.clearRestlet();
+        await ctx.clearRestlet();
         ctx.body = 'ok';
         return;
       } else {
-        return yield next;
+        return await next();
       }
     };
 

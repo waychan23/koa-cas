@@ -1,9 +1,9 @@
 const Koa = require('koa');
-const co = require('co');
-const convert = require('koa-convert');
+//const co = require('co');
+//const convert = require('koa-convert');
 const bodyParser = require('koa-bodyparser');
-const cookie = require('koa-cookie');
-const json = require('koa-json');
+//const cookie = require('koa-cookie');
+//const json = require('koa-json');
 const {
   toArray,
   getPath,
@@ -40,34 +40,34 @@ describe('utils单元测试', function() {
   before(function(done) {
     app = new Koa();
     app.keys = [ 'cas', 'test' ];
-    app.use(convert.back(cookie.default('here is some secret')));
+//    app.use(convert.back(cookie.default('here is some secret')));
     app.use(bodyParser());
-    app.use(convert.back(json()));
+//    app.use(convert.back(json()));
 
-    app.use(function* (next) {
-      if (this.path === '/') {
-        switch (this.method) {
+    app.use(async function (ctx, next) {
+      if (ctx.path === '/') {
+        switch (ctx.method) {
           case 'GET':
-            this.body = {
+            ctx.body = {
               message: 'ok',
             };
             return;
           case 'DELETE':
-            this.body = {
+            ctx.body = {
               message: 'ok',
             };
             return;
           case 'POST':
-            this.body = this.request.body;
+            ctx.body = ctx.request.body;
             return;
           default:
-            this.body = {
+            ctx.body = {
               message: 'Not Found',
             };
             return;
         }
       } else {
-        return yield next;
+        return await next();
       }
     });
 
@@ -319,97 +319,125 @@ describe('utils单元测试', function() {
   });
 
   it('getRequest能够正确发送http GET请求,接收请求', function(done) {
-    co(function* () {
-      const res = yield getRequest(localPath);
-      expect(res.status).to.equal(200);
-      expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({
-        message: 'ok',
-      }));
-      done();
-    }).catch(done);
+    (async function () {
+      try{
+        const res = await getRequest(localPath);
+        expect(res.status).to.equal(200);
+        expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({
+          message: 'ok',
+        }));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('getRequest能够正确发送https GET请求,接收请求', function(done) {
-    co(function* () {
-      const res = yield getRequest(httpsLocalPath);
-      expect(res.status).to.equal(200);
-      expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({ message: 'ok' }));
-      done();
-    }).catch(done);
+    (async function () {
+      try{
+        const res = await getRequest(httpsLocalPath);
+        expect(res.status).to.equal(200);
+        expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({ message: 'ok' }));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('postRequest能够正确发送http POST请求,接收请求', function(done) {
-    co(function* () {
-      const data = {
-        hello: 'world',
-      };
+    (async function () {
+      try{
+        const data = {
+          hello: 'world',
+        };
 
-      const res = yield postRequest(localPath, data);
-      expect(res.status).to.equal(200);
-      expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify(data));
-      done();
-    }).catch(done);
+        const res = await postRequest(localPath, data);
+        expect(res.status).to.equal(200);
+        expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify(data));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('postRequest能够正确发送http POST请求, 设置特殊头, 并接收请求', function(done) {
-    co(function* () {
-      const data = {
-        hello: 'world',
-      };
+    (async function () {
+      try{
+        const data = {
+          hello: 'world',
+        };
 
-      const res = yield postRequest(localPath, data, {
-        headers: {
-          Cookie: 'Content-Type: application/json',
-        },
-      });
-      expect(res.status).to.equal(200);
-      expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify(data));
-      done();
-    }).catch(done);
+        const res = await postRequest(localPath, data, {
+          headers: {
+            Cookie: 'Content-Type: application/json',
+          },
+        });
+        expect(res.status).to.equal(200);
+        expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify(data));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('postRequest能够正确发送https POST请求,接收请求', function(done) {
-    co(function* () {
-      const data = {
-        hello: 'world',
-      };
+    (async function () {
+      try{
+        const data = {
+          hello: 'world',
+        };
 
-      const res = yield postRequest(httpsLocalPath, data);
-      expect(res.status).to.equal(200);
-      expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify(data));
-      done();
-    }).catch(done);
+        const res = await postRequest(httpsLocalPath, data);
+        expect(res.status).to.equal(200);
+        expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify(data));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('deleteRequest能够正确发送http DELETE请求,接收请求', function(done) {
-    co(function* () {
-      const res = yield deleteRequest(localPath);
-      expect(res.status).to.equal(200);
-      expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({
-        message: 'ok',
-      }));
-      done();
-    }).catch(done);
+    (async function () {
+      try{
+        const res = await deleteRequest(localPath);
+        expect(res.status).to.equal(200);
+        expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({
+          message: 'ok',
+        }));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('deleteRequest能够正确发送https DELETE请求,接收请求', function(done) {
-    co(function* () {
-      const res = yield deleteRequest(httpsLocalPath);
-      expect(res.status).to.equal(200);
-      expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({
-        message: 'ok',
-      }));
-      done();
-    }).catch(done);
+    (async function () {
+      try{
+        const res = await deleteRequest(httpsLocalPath);
+        expect(res.status).to.equal(200);
+        expect(res.body.replace(/\s*/g, '')).to.equal(JSON.stringify({
+          message: 'ok',
+        }));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('getLogger工作正常', function(done) {
     const app = new Koa();
-    app.use(function*(next) {
+    app.use(async function(ctx, next) {
       function getLogger(type) {
         let user = 'unknown';
         try {
-          user = this.session.cas.user;
+          user = ctx.session.cas.user;
         } catch (e) {} // eslint-disable-line
 
         if (!console[type]) {
@@ -417,47 +445,56 @@ describe('utils单元测试', function() {
           type = 'log';
         }
 
-        return console[type].bind(console[type], `${this.sn}|`, `${user}|`, `${this.ip}|`);
+        return console[type].bind(console[type], `${ctx.sn}|`, `${user}|`, `${ctx.ip}|`);
       }
 
       this.getLogger = getLogger;
-      return yield next;
+      return await next();
     });
 
-    app.use(function*(next) {
-      let logger = getLogger(this, {
-        logger(ctx, type) {
-          return ctx.getLogger(type);
-        },
-      });
+    app.use(async function(ctx, next) {
+      try{
+        let logger = getLogger(ctx, {
+          logger(ctx, type) {
+//            return ctx.getLogger(type);
+            return function(){};
+          },
+        });
 
-      expect(typeof logger.info).to.equal('function');
-      expect(typeof logger.warn).to.equal('function');
-      expect(typeof logger.error).to.equal('function');
-      expect(typeof logger.log).to.equal('function');
+        expect(typeof logger.info).to.equal('function');
+        expect(typeof logger.warn).to.equal('function');
+        expect(typeof logger.error).to.equal('function');
+        expect(typeof logger.log).to.equal('function');
 
-      logger = getLogger(this);
+        logger = getLogger(ctx);
 
-      expect(typeof logger.info).to.equal('function');
-      expect(typeof logger.warn).to.equal('function');
-      expect(typeof logger.error).to.equal('function');
-      expect(typeof logger.log).to.equal('function');
-      return yield next;
+        expect(typeof logger.info).to.equal('function');
+        expect(typeof logger.warn).to.equal('function');
+        expect(typeof logger.error).to.equal('function');
+        expect(typeof logger.log).to.equal('function');
+        return await next();
+      }catch(err){
+        ctx.throw(err);
+      }
     });
 
-    app.use(function* (next) {
-      if (this.path === '/') {
-        this.body = 'ok';
+    app.use(async function (ctx, next) {
+      if (ctx.path === '/') {
+        ctx.body = 'ok';
         return;
       }
-      return yield next;
+      return await next();
     });
     let server;
-    co(function* () {
-      yield new Promise((r, j) => server = app.listen(3004, (err) => err ? j(err) : r()));
-      yield getRequest('http://localhost:3004/');
-      yield new Promise((r, j) => server.close((err) => err ? j(err) : r()));
-      done();
-    }).catch(done);
+    (async function () {
+      try{
+        await new Promise((r, j) => server = app.listen(3004, (err) => err ? j(err) : r()));
+        await getRequest('http://localhost:3004/');
+        await new Promise((r, j) => server.close((err) => err ? j(err) : r()));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 });

@@ -128,15 +128,15 @@ describe('cas server如预期', function() {
     const localPort = 3002;
     const appLocal = new Koa();
     const router = new Router();
-    router.get('/cas/proxyCallback', function* () {
-      console.log('/cas/proxyCallback query:', this.query);
-      if (this.query) {
-        expect(this.query.pgtIou).to.not.be.empty;
-        expect(this.query.pgtId).to.not.be.empty;
-        store[this.query.pgtIou] = this.query.pgtId;
-        this.body = 'ok';
+    router.get('/cas/proxyCallback', async function (ctx, next) {
+      console.log('/cas/proxyCallback query:', ctx.query);
+      if (ctx.query) {
+        expect(ctx.query.pgtIou).to.not.be.empty;
+        expect(ctx.query.pgtId).to.not.be.empty;
+        store[ctx.query.pgtIou] = ctx.query.pgtId;
+        ctx.body = 'ok';
       } else {
-        this.status = 400;
+        ctx.status = 400;
       }
     });
     appLocal.use(router.routes()).use(router.allowedMethods());

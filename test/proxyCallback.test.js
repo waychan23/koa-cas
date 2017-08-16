@@ -1,5 +1,5 @@
 const Koa = require('koa');
-const co = require('co');
+//const co = require('co');
 const supertest = require('supertest');
 const { logger, hooks } = require('./lib/test-utils');
 const { expect } = require('chai');
@@ -36,64 +36,76 @@ describe('proxyCallback符合预期', function() {
       hooks,
     }, {
       beforeCasConfigHook(app) {
-        app.use(function* (next) {
+        app.use(async function (ctx, next) {
           if (typeof hookBeforeCasConfig === 'function') {
-            return yield hookBeforeCasConfig(this, next);
+            return await hookBeforeCasConfig(ctx, next);
           } else {
-            return yield next;
+            return await next();
           }
         });
       },
       afterCasConfigHook(app) {
-        app.use(function* (next) {
+        app.use(async function (ctx, next) {
           if (typeof hookAfterCasConfig === 'function') {
-            return yield hookAfterCasConfig(this, next);
+            return await hookAfterCasConfig(ctx, next);
           } else {
-            return yield next;
+            return await next();
           }
         });
       },
     });
 
-    co(function* () {
-      yield new Promise((r, j) => casServer = casServerApp.listen(casPort, (err) => err ? j(err) : r()));
-      console.log(`casServer listen ${casPort}`);
+    (async function () {
+      try{
+        await new Promise((r, j) => casServer = casServerApp.listen(casPort, (err) => err ? j(err) : r()));
+        console.log(`casServer listen ${casPort}`);
 
-      yield new Promise((r, j) => casClientServer = casClientApp.listen(clientPort, (err) => err ? j(err) : r()));
-      console.log(`casClientServer listen ${clientPort}`);
-      request = supertest.agent(casClientApp.listen());
-      done();
-    });
+        await new Promise((r, j) => casClientServer = casClientApp.listen(clientPort, (err) => err ? j(err) : r()));
+        console.log(`casClientServer listen ${clientPort}`);
+        request = supertest.agent(casClientApp.listen());
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   afterEach(function(done) {
     hookAfterCasConfig = null;
     hookBeforeCasConfig = null;
-    co(function* () {
-      yield new Promise((r, j) => casServer.close((err) => err ? j(err) : r()));
-      yield new Promise((r, j) => casClientServer.close((err) => err ? j(err) : r()));
-      done();
-    });
+    (async function () {
+      try{
+        await new Promise((r, j) => casServer.close((err) => err ? j(err) : r()));
+        await new Promise((r, j) => casClientServer.close((err) => err ? j(err) : r()));
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('啥参数都不带直接调用, 或是参数不合法(无pgtIou或pgtId) 直接响应200', function(done) {
-    hookAfterCasConfig = function* (ctx, next) {
+    hookAfterCasConfig = async function (ctx, next) {
       if (ctx.path === '/cas/proxyCallback') {
         const { pgtIou } = ctx.query;
         if (pgtIou) {
-          const pgtInfo = yield ctx.sessionStore.get(pgtIou);
+          const pgtInfo = await ctx.sessionStore.get(pgtIou);
           expect(pgtInfo).to.be.empty;
         }
       } else {
-        yield next;
+        await next();
       }
     };
-    co(function* () {
-      yield request.get('/cas/proxyCallback').expect(200);
-      yield request.get('/cas/proxyCallback?pgtIou=xxx').expect(200);
-      yield request.get('/cas/proxyCallback?pgtId=xxx').expect(200);
-      done();
-    }).catch(done);
+    (async function () {
+      try{
+        await request.get('/cas/proxyCallback').expect(200);
+        await request.get('/cas/proxyCallback?pgtIou=xxx').expect(200);
+        await request.get('/cas/proxyCallback?pgtId=xxx').expect(200);
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
   it('传入pgtId/pgtIou, 能够正确存入, 并能通过pgtIou找到pgtId', function(done) {
@@ -101,25 +113,29 @@ describe('proxyCallback符合预期', function() {
     const fakePgtIou = 'pgtIou';
     const fakePgtId = 'pgtId';
 
-    hookBeforeCasConfig = function*(ctx, next) {
+    hookBeforeCasConfig = async function(ctx, next) {
       if (ctx.path === '/get') {
         expect(ctx.query.pgtIou).to.not.be.empty;
-        const session = yield ctx.sessionStore.get(ctx.query.pgtIou);
+        const session = await ctx.sessionStore.get(ctx.query.pgtIou);
         ctx.body = session.pgtId;
       } else {
-        yield next;
+        await next();
       }
     };
 
-    co(function* () {
-      let res = yield request.get(`/cas/proxyCallback?pgtIou=${fakePgtIou}&pgtId=${fakePgtId}`).expect(200);
-      const cookies = handleCookies.setCookies(res.header);
+    (async function () {
+      try{
+        let res = await request.get(`/cas/proxyCallback?pgtIou=${fakePgtIou}&pgtId=${fakePgtId}`).expect(200);
+        const cookies = handleCookies.setCookies(res.header);
 
-      res = yield request.get(`/get?pgtIou=${fakePgtIou}`).set('Cookie', handleCookies.getCookies(cookies)).expect(200);
-      const pgtId = res.text;
-      expect(pgtId).to.equal(fakePgtId);
-      done();
-    });
+        res = await request.get(`/get?pgtIou=${fakePgtIou}`).set('Cookie', handleCookies.getCookies(cookies)).expect(200);
+        const pgtId = res.text;
+        expect(pgtId).to.equal(fakePgtId);
+        done();
+      }catch(err){
+        done(err);
+      }
+    })();
   });
 
 });

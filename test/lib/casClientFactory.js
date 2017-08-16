@@ -4,9 +4,9 @@
 const session = require('koa-generic-session');
 const convert = require('koa-convert');
 const bodyParser = require('koa-bodyparser');
-const cookie = require('koa-cookie');
+//onst cookie = require('koa-cookie');
 const Router = require('koa-router');
-const json = require('koa-json');
+//const json = require('koa-json');
 const CasClient = require('../../index');
 const _ = require('lodash');
 
@@ -24,13 +24,13 @@ module.exports = function(app, casOptions, {
 } = {}) {
 
   app.keys = [ 'cas', 'test' ];
-  app.use(convert.back(cookie.default('here is some secret')));
+//  app.use(convert.back(cookie.default('here is some secret')));
   app.use(session({
     key: 'SESSIONID', // default "koa:sess"
-    store: session.MemoryStore(),
+    store: new (session.MemoryStore)(),
   }));
   app.use(bodyParser());
-  app.use(convert.back(json()));
+//  app.use(convert.back(json()));
 
   const demoParams = {
     appId: '900007430',
@@ -118,9 +118,9 @@ module.exports = function(app, casOptions, {
 
   const router = new Router();
   router.get('/logout', casClient.logout());
-  router.get('/', function* () {
+  router.get('/', async function (ctx, next) {
     console.log('GET / DONE');
-    this.body = 'ok';
+    ctx.body = 'ok';
   });
   app
     .use(router.routes())
