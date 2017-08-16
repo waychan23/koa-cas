@@ -243,7 +243,7 @@ module.exports = (app, options) => {
     if (this.query && this.query.service) {
       const pgtId = uuid.v4();
       tgts[pgtId] = initTgt();
-      const st = uuid.v4();
+      const st = 'ST-'+uuid.v4();
       tgts[pgtId].st[st] = initTicket(this.query.service);
       const path = decodeURIComponent(this.query.service);
       const uri = url.parse(path, true);
